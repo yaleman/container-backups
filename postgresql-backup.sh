@@ -21,10 +21,12 @@ if [ -z "${POSTGRESQL_PASS}" ]; then
 fi
 
 if [ -z "${BACKUP_PREFIX}" ]; then
-    BACKUP_PREFIX="backup-"
+    BACKUP_PREFIX="backup"
 fi
 
 BACKUP_FILE="${BACKUP_PREFIX}-${BACKUP_NAME}-$(date +%Y%m%d-%H%M).tar"
+
+cd "$(mktemp -d)"
 
 PGPASSWORD="${POSTGRESQL_PASS}" pg_dumpall \
     -h "${POSTGRESQL_SERVER}" \
