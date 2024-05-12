@@ -11,6 +11,10 @@ if [ -z "${POSTGRESQL_SERVER}" ]; then
     echo "Please specify the POSTGRESQL_SERVER environment variable."
     exit 1
 fi
+if [ -z "${POSTGRESQL_USER}" ]; then
+    echo "Please specify the POSTGRESQL_USER environment variable."
+    exit 1
+fi
 if [ -z "${POSTGRESQL_PASS}" ]; then
     echo "Please specify the POSTGRESQL_PASS environment variable."
     exit 1
@@ -25,7 +29,7 @@ BACKUP_FILE="${BACKUP_PREFIX}-${BACKUP_NAME}-$(date +%Y%m%d-%H%M).tar"
 PGPASSWORD="${POSTGRESQL_PASS}" pg_dumpall \
     -h "${POSTGRESQL_SERVER}" \
     -p 5432 \
-    --username=postgres \
+    --username="${POSTGRESQL_USER}" \
     --file="${BACKUP_FILE}"
 #Compressing backup file for upload
 gzip -9 "${BACKUP_FILE}"
