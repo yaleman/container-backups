@@ -10,16 +10,22 @@ import re
 import boto3.session
 from botocore.client import BaseClient
 from pydantic import Field
-from pydantic_settings import BaseSettings
+from pydantic_core import ValidationError
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+ENV_PREFIX = "S3_BACKUP_"
 
 
 class Config(BaseSettings):
-    backup_filename: str
+    filename: str
     bucket_name: str
     bucket_path: str = Field(default="")
-    backup_max_age_days: int = Field(default=30)
-    backup_min_files: int = Field(default=7)
-    s3_endpoint_url: Optional[str] = None
+    max_age_days: int = Field(default=30)
+    min_files: int = Field(default=7)
+    endpoint_url: Optional[str] = None
+
+    model_config = SettingsConfigDict(env_prefix=ENV_PREFIX)
 
 
 def get_date_from_file_path(file_path: str) -> datetime:
@@ -40,16 +46,16 @@ def clean_up_old_files(
     print(f"Looking in s3://{config.bucket_name}/{config.bucket_path}", file=sys.stderr)
     response = s3.list_objects_v2(Bucket=config.bucket_name, Prefix=config.bucket_path)  # type: ignore
 
-    if len(response.get("Contents", [])) < config.backup_min_files:
+    if len(response.get("Contents", [])) < config.min_files:
         print(
-            f"Found less than {config.backup_min_files} files total, exiting",
+            f"Found less than {config.min_files} files total, exiting",
             file=sys.stderr,
         )
         return None
 
-    age_cutoff = datetime.now(UTC) - timedelta(days=config.backup_max_age_days)
+    age_cutoff = datetime.now(UTC) - timedelta(days=config.max_age_days)
     print(
-        f"Files older than {age_cutoff.isoformat()} ({config.backup_max_age_days} days) will be deleted",
+        f"Files older than {age_cutoff.isoformat()} ({config.max_age_days} days) will be deleted",
         file=sys.stderr,
     )
 
@@ -72,9 +78,9 @@ def clean_up_old_files(
             )
             files_to_keep.append(obj["Key"])
 
-    if len(files_to_keep) < config.backup_min_files:
+    if len(files_to_keep) < config.min_files:
         print(
-            f"Found less than {config.backup_min_files} files younger than {age_cutoff.isoformat()}, exiting",
+            f"Found less than {config.min_files} files younger than {age_cutoff.isoformat()}, exiting",
             file=sys.stderr,
         )
         return None
@@ -98,24 +104,34 @@ def clean_up_old_files(
 def upload_file(s3: BaseClient, config: Config) -> None:
     """upload the file!"""
 
-    if not Path(config.backup_filename).exists():
-        raise FileNotFoundError(f"File {config.backup_filename} not found")
+    if not Path(config.filename).exists():
+        raise FileNotFoundError(f"File {config.filename} not found")
     s3.upload_file(  # type: ignore
-        Filename=config.backup_filename,
+        Filename=config.filename,
         Bucket=config.bucket_name,
-        Key=f"{config.bucket_path}/{basename(config.backup_filename)}",
+        Key=f"{config.bucket_path}/{basename(config.filename)}",
     )
 
 
 def main(use_file_path: bool = False) -> Optional[int]:
     """returns the number of files deleted"""
 
-    config = Config()  # type: ignore
+    try:
+        config = Config()  # type: ignore
+    except ValidationError as ve:
+        for error in ve.errors():
+            if error.get("type") == "missing":
+                print(
+                    f"Missing environment variable {ENV_PREFIX}{error.get('loc')[0].upper()}"
+                )
+            else:
+                print(error)
+        sys.exit(1)
     session = boto3.session.Session()
 
     s3 = session.client(
         service_name="s3",
-        endpoint_url=config.s3_endpoint_url,
+        endpoint_url=config.endpoint_url,
     )
     upload_file(s3, config)
     return clean_up_old_files(s3=s3, config=config, use_file_path=use_file_path)

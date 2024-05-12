@@ -21,3 +21,6 @@ types-boto3 = "^1.0.2"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+s3_backup = "container_backups.s3_backup:main"

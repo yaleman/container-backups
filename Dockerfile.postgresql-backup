@@ -6,19 +6,20 @@ RUN apt-get update && \
 
 COPY postgresql-backup.sh /usr/local/bin/postgresql-backup.sh
 RUN chmod +x /usr/local/bin/postgresql-backup.sh
-COPY s3_backup.py /usr/local/bin/s3_backup.py
-RUN chmod +x /usr/local/bin/s3_backup.py
 COPY entrypoint-postgresql-backup.sh /usr/local/bin/entrypoint-postgresql-backup.sh
 RUN chmod +x /usr/local/bin/entrypoint-postgresql-backup.sh
 
-RUN mkdir -p /opt/container-backups
+# install the python package
+RUN mkdir -p /opt/container-backups/container_backups
 COPY pyproject.toml /opt/container-backups
 COPY README.md /opt/container-backups
+COPY container_backups/* /opt/container-backups/container_backups/
 
 RUN useradd backupuser
 RUN mkdir -p /home/backupuser
 RUN chown -R backupuser:backupuser /home/backupuser
 USER backupuser
 
-RUN python3 -m pip install pydantic-settings --break-system-packages --user
+RUN python3 -m pip install --break-system-packages --user /opt/container-backups
+ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/backupuser/.local/bin"
 ENTRYPOINT [ "/usr/local/bin/entrypoint-postgresql-backup.sh" ]
