@@ -1,0 +1,15 @@
+FROM ubuntu:23.10
+
+RUN apt-get update && \
+    apt-get install -y awscli postgresql-client python3-boto3 && \
+    apt-get clean
+
+COPY postgresql-backup.sh /usr/local/bin/postgresql-backup.sh
+RUN chmod +x /usr/local/bin/postgresql-backup.sh
+COPY s3_backup.py /usr/local/bin/s3_backup.py
+RUN chmod +x /usr/local/bin/s3_backup.py
+COPY entrypoint-postgresql-backup.sh /usr/local/bin/entrypoint-postgresql-backup.sh
+RUN chmod +x /usr/local/bin/entrypoint-postgresql-backup.sh
+
+USER backup
+ENTRYPOINT [ "/usr/local/bin/entrypoint-postgresql-backup.sh" ]
