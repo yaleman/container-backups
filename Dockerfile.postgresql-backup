@@ -1,7 +1,7 @@
 FROM ubuntu:23.10
 
 RUN apt-get update && \
-    apt-get install -y awscli postgresql-client python3-boto3 && \
+    apt-get install -y awscli postgresql-client python3-boto3 python3-pip python3-virtualenv && \
     apt-get clean
 
 COPY postgresql-backup.sh /usr/local/bin/postgresql-backup.sh
@@ -11,5 +11,14 @@ RUN chmod +x /usr/local/bin/s3_backup.py
 COPY entrypoint-postgresql-backup.sh /usr/local/bin/entrypoint-postgresql-backup.sh
 RUN chmod +x /usr/local/bin/entrypoint-postgresql-backup.sh
 
-USER backup
+RUN mkdir -p /opt/container-backups
+COPY pyproject.toml /opt/container-backups
+COPY README.md /opt/container-backups
+
+RUN useradd backupuser
+RUN mkdir -p /home/backupuser
+RUN chown -R backupuser:backupuser /home/backupuser
+USER backupuser
+
+RUN python3 -m pip install pydantic-settings --break-system-packages --user
 ENTRYPOINT [ "/usr/local/bin/entrypoint-postgresql-backup.sh" ]
