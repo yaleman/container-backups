@@ -4,10 +4,10 @@ RUN apt-get update && \
     apt-get install -y mariadb-client && \
     apt-get clean && rm -rf /var/lib/apt/*
 
-COPY postgresql-backup.sh /usr/local/bin/postgresql-backup.sh
-RUN chmod +x /usr/local/bin/postgresql-backup.sh
-COPY entrypoint-postgresql-backup.sh /usr/local/bin/entrypoint-postgresql-backup.sh
-RUN chmod +x /usr/local/bin/entrypoint-postgresql-backup.sh
+COPY mysql-backup.sh /usr/local/bin/mysql-backup.sh
+RUN chmod +x /usr/local/bin/mysql-backup.sh
+COPY entrypoint-mysql-backup.sh /usr/local/bin/entrypoint-mysql-backup.sh
+RUN chmod +x /usr/local/bin/entrypoint-mysql-backup.sh
 
 # install the python package
 RUN mkdir -p /opt/container-backups/container_backups
@@ -22,4 +22,4 @@ USER backupuser
 
 RUN python3 -m pip install --break-system-packages --no-cache-dir --user /opt/container-backups
 ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/backupuser/.local/bin"
-ENTRYPOINT [ "/usr/local/bin/entrypoint-postgresql-backup.sh" ]
+ENTRYPOINT [ "/usr/local/bin/entrypoint-mysql-backup.sh" ]

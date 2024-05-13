@@ -33,19 +33,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
-          # buildkitd-flags: --debug
           install: true
-      # - name: Build and export to Docker
-      #   id: build_and_export
-      #   uses: docker/build-push-action@v5
-      #   with:
-      #     platforms: linux/amd64,linux/arm64
-      #     context: .
-      #     load: true
-      #     tags: container-backups-postgresql:latest
-      #     cache-from: type=gha
-      #     cache-to: type=gha,mode=max
-      #     build-args: GITHUB_SHA=${GITHUB_SHA}
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
@@ -55,5 +43,6 @@ jobs:
           tags: ghcr.io/yaleman/container-backups-postgresql:latest
           push:  ${{ github.ref == 'refs/heads/main' }}
           cache-from: type=gha
+          cache-to: type=gha
           build-args: GITHUB_SHA=${GITHUB_SHA}
         # if: github.event.pull_request.merged == true
