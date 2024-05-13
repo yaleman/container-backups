@@ -8,6 +8,7 @@ from typing import Optional
 import boto3
 import re
 import boto3.session
+from botocore.client import Config as BotocoreConfig
 from botocore.client import BaseClient
 from pydantic import Field, field_validator
 from pydantic_core import ValidationError
@@ -114,10 +115,15 @@ def upload_file(s3: BaseClient, config: Config) -> None:
 
     if not Path(config.filename).exists():
         raise FileNotFoundError(f"File {config.filename} not found")
+
+    key = f"{config.bucket_path}/{basename(config.filename)}"
+    if key.startswith("/"):
+        key = key[1:]
+
     s3.upload_file(  # type: ignore
         Filename=config.filename,
         Bucket=config.bucket_name,
-        Key=f"{config.bucket_path}/{basename(config.filename)}",
+        Key=key,
     )
 
 
@@ -136,11 +142,14 @@ def main(use_file_path: bool = False) -> Optional[int]:
                 print(error)
         sys.exit(1)
     session = boto3.session.Session()
-
     s3 = session.client(
         service_name="s3",
         endpoint_url=config.endpoint_url,
+        config=BotocoreConfig(
+            signature_version="s3v4"
+        ),  # default to "better" signatures. This is required for minio especially
     )
+
     upload_file(s3, config)
     return clean_up_old_files(s3=s3, config=config, use_file_path=use_file_path)
 
