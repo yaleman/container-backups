@@ -26,8 +26,6 @@ fi
 
 BACKUP_FILE="${BACKUP_PREFIX}-${BACKUP_NAME}-$(date +%Y%m%d-%H%M).tar"
 
-cd "$(mktemp -d)"
-
 PGPASSWORD="${POSTGRESQL_PASS}" pg_dumpall \
     -h "${POSTGRESQL_SERVER}" \
     -p 5432 \
@@ -36,4 +34,5 @@ PGPASSWORD="${POSTGRESQL_PASS}" pg_dumpall \
 #Compressing backup file for upload
 gzip -9 "${BACKUP_FILE}"
 
-echo "Saved backup as '${BACKUP_FILE}'"
+echo "Saved backup as '${BACKUP_FILE}.tar.gz'"
+ls -lah ./

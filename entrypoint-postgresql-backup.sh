@@ -2,6 +2,8 @@
 
 set -e
 
+cd "$(mktemp -d)"
+
 postgresql-backup.sh
 
 if [ -n "${S3_BACKUP_BUCKET_NAME}" ]; then
