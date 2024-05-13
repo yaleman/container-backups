@@ -1,7 +1,7 @@
 FROM python:3.12-slim
 
 RUN apt-get update && \
-    apt-get install -y postgresql-client && \
+    apt-get install -y mariadb-client && \
     apt-get clean && rm -rf /var/lib/apt/*
 
 COPY postgresql-backup.sh /usr/local/bin/postgresql-backup.sh

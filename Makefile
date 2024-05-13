@@ -24,10 +24,16 @@ semgrep:
 
 .PHONY: docker
 docker: ## Build all the containers
-docker: docker/postgresql-backup
+docker: docker/postgresql-backup docker/mysql-backup
 
 .PHONY: docker/postgresql-backup
 docker/postgresql-backup: ## Build a PostgreSQL backup in a Docker container
 docker/postgresql-backup:
 	docker build -t 'container-backups-postgresql' -f Dockerfile.postgresql-backup .
+
+
+.PHONY: docker/mysql-backup
+docker/mysql-backup: ## Build a MySQL backup in a Docker container
+docker/mysql-backup:
+	docker build -t 'container-backups-mysql' -f Dockerfile.mysql-backup .
 
