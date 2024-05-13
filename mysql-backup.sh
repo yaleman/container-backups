@@ -26,11 +26,11 @@ fi
 
 BACKUP_FILE="${BACKUP_PREFIX}-${BACKUP_NAME}-$(date +%Y%m%d-%H%M).tar"
 
-PGPASSWORD="${DB_PASS}" pg_dumpall \
-    -h "${DB_SERVER}" \
-    -p 5432 \
-    --username="${MYSQL_USER}" \
-    --file="${BACKUP_FILE}"
+mysqldump \
+    --host="${DB_SERVER}" \
+    --user="${DB_USER}" \
+    --password="${DB_PASS}" \
+    --result-file="${BACKUP_FILE}"
 #Compressing backup file for upload
 gzip -9 "${BACKUP_FILE}"
 
