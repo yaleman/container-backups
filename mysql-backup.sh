@@ -16,7 +16,7 @@ if [ -z "${DB_USER}" ]; then
     exit 1
 fi
 if [ -z "${DB_PASS}" ]; then
-    echo "Please specify the DBL_PASS environment variable."
+    echo "Please specify the DB_PASS environment variable."
     exit 1
 fi
 
