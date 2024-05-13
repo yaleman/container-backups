@@ -9,7 +9,7 @@ import boto3
 import re
 import boto3.session
 from botocore.client import BaseClient
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_core import ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -18,14 +18,23 @@ ENV_PREFIX = "S3_BACKUP_"
 
 
 class Config(BaseSettings):
-    filename: str
-    bucket_name: str
+    filename: str = Field()
+    bucket_name: str = Field()
     bucket_path: str = Field(default="")
     max_age_days: int = Field(default=30)
     min_files: int = Field(default=7)
     endpoint_url: Optional[str] = None
 
     model_config = SettingsConfigDict(env_prefix=ENV_PREFIX)
+
+    @field_validator("filename")
+    @classmethod
+    def validate_filename(cls, value: str) -> str:
+        if not value:
+            raise ValueError("Filename is required to be non-empty!")
+        if not Path(value).exists():
+            raise FileNotFoundError(f"File {value} not found")
+        return value
 
 
 def get_date_from_file_path(file_path: str) -> datetime:
@@ -42,7 +51,6 @@ def clean_up_old_files(
     config: Config,
     use_file_path: bool = False,
 ) -> Optional[int]:
-
     print(f"Looking in s3://{config.bucket_name}/{config.bucket_path}", file=sys.stderr)
     response = s3.list_objects_v2(Bucket=config.bucket_name, Prefix=config.bucket_path)  # type: ignore
 
@@ -122,7 +130,7 @@ def main(use_file_path: bool = False) -> Optional[int]:
         for error in ve.errors():
             if error.get("type") == "missing":
                 print(
-                    f"Missing environment variable {ENV_PREFIX}{error.get('loc')[0].upper()}"
+                    f"Missing environment variable {ENV_PREFIX}{error.get('loc')[0].upper()}"  # type: ignore
                 )
             else:
                 print(error)

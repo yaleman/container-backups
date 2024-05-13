@@ -6,7 +6,7 @@ help:
 .PHONY: checks
 checks: ## Check things
 checks: shellcheck semgrep
-	poetry run mypy --strict *.py tests/*.py
+	poetry run mypy --strict container_backups tests/*.py
 	poetry run ruff check *.py tests/*.py
 
 .PHONY: shellcheck

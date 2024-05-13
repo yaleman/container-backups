@@ -36,6 +36,4 @@ PGPASSWORD="${POSTGRESQL_PASS}" pg_dumpall \
 #Compressing backup file for upload
 gzip -9 "${BACKUP_FILE}"
 
-export BACKUP_FILE="${BACKUP_FILE}.gz"
-
 echo "Saved backup as '${BACKUP_FILE}'"
