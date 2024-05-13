@@ -30,7 +30,8 @@ mysqldump \
     --host="${DB_SERVER}" \
     --user="${DB_USER}" \
     --password="${DB_PASS}" \
-    --result-file="${BACKUP_FILE}"
+    --result-file="${BACKUP_FILE}" \
+    --all-databases
 #Compressing backup file for upload
 gzip -9 "${BACKUP_FILE}"
 
