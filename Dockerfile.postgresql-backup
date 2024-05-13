@@ -1,8 +1,8 @@
-FROM ubuntu:23.10
+FROM python:3.12-slim
 
 RUN apt-get update && \
-    apt-get install -y awscli postgresql-client python3-boto3 python3-pip python3-virtualenv && \
-    apt-get clean
+    apt-get install -y awscli postgresql-client && \
+    apt-get clean && rm -rf /var/lib/apt/*
 
 COPY postgresql-backup.sh /usr/local/bin/postgresql-backup.sh
 RUN chmod +x /usr/local/bin/postgresql-backup.sh
@@ -20,6 +20,6 @@ RUN mkdir -p /home/backupuser
 RUN chown -R backupuser:backupuser /home/backupuser
 USER backupuser
 
-RUN python3 -m pip install --break-system-packages --user /opt/container-backups
+RUN python3 -m pip install --break-system-packages --no-cache-dir --user /opt/container-backups
 ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/backupuser/.local/bin"
 ENTRYPOINT [ "/usr/local/bin/entrypoint-postgresql-backup.sh" ]
