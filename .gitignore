@@ -5,6 +5,7 @@ dist/
 .env
 .envrc
 *.asc
+.*_cache
 build/
 *.egg-info/
 **/__pycache__/*
