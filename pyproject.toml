@@ -12,7 +12,7 @@ pydantic-settings = "^2.2.1"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.10.0"
-ruff = "^0.4.4"
+ruff = "^0.4.9"
 pytest = "^8.2.2"
 testcontainers = "^4.4.0"
 minio = "^7.2.7"
