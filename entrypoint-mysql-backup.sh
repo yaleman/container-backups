@@ -12,3 +12,4 @@ else
     echo "No S3_BACKUP_BUCKET_NAME specified, skipping upload."
 fi
 
+echo "Task complete for bucket ${S3_BACKUP_BUCKET_NAME}."
