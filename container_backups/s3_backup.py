@@ -43,7 +43,7 @@ def get_date_from_file_path(file_path: str) -> datetime:
     res = re.search(r"^[\w]+-[\w]+-(?P<datestring>\d{8}-\d{4}).tar.gz", file_path)
     if res is None:
         raise ValueError(f"Couldn't parse '{file_path}' for a matching date!")
-    print(res.group("datestring"))
+    # print(res.group("datestring"))
     return datetime.strptime(res.group("datestring"), "%Y%m%d-%H%M").astimezone(UTC)
 
 
@@ -77,14 +77,10 @@ def clean_up_old_files(
         else:
             last_modified = obj.get("LastModified")
         if last_modified < age_cutoff:
-            print(
-                f"{obj.get('Key')} is older than {age_cutoff.isoformat()}: {last_modified.isoformat()}"
-            )
+            # print(f"{obj.get('Key')} is older than cutoff")
             files_to_remove.append(obj["Key"])
         else:
-            print(
-                f"{obj.get('Key')} is younger than {age_cutoff.isoformat()}: {last_modified.isoformat()}"
-            )
+            # print(f"{obj.get('Key')} is younger than cutoff")
             files_to_keep.append(obj["Key"])
 
     if len(files_to_keep) < config.min_files:
