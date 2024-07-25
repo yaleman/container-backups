@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 if [ -z "${BACKUP_NAME}" ]; then
     echo "Please specify the BACKUP_NAME environment variable."
     exit 1
