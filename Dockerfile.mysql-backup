@@ -4,8 +4,6 @@ RUN apt-get update && \
     apt-get install -y mariadb-client && \
     apt-get clean && rm -rf /var/lib/apt/*
 
-COPY mysql-backup.sh /usr/local/bin/mysql-backup.sh
-RUN chmod +x /usr/local/bin/mysql-backup.sh
 COPY entrypoint-mysql-backup.sh /usr/local/bin/entrypoint-mysql-backup.sh
 RUN chmod +x /usr/local/bin/entrypoint-mysql-backup.sh
 
