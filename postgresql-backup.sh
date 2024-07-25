@@ -31,6 +31,12 @@ PGPASSWORD="${POSTGRESQL_PASS}" pg_dumpall \
     --username="${POSTGRESQL_USER}" \
     --file="${BACKUP_FILE}"
 #Compressing backup file for upload
+
+if [ ! -f "${BACKUP_FILE}" ]; then
+    echo "Backup file ${BACKUP_FILE} not found. Exiting..."
+    exit 1
+fi
+
 echo "Compressing to ${BACKUP_FILE}.gz..."
 gzip -9 "${BACKUP_FILE}"
 
