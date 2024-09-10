@@ -18,6 +18,9 @@ RUN mkdir -p /home/backupuser
 RUN chown -R backupuser:backupuser /home/backupuser
 USER backupuser
 
+RUN mkdir /home/backupuser/backups
+WORKDIR /home/backupuser/backups
+
 RUN python3 -m pip install --break-system-packages --no-cache-dir --user /opt/container-backups
 ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/backupuser/.local/bin"
 ENTRYPOINT [ "/usr/local/bin/entrypoint-postgresql-backup.sh" ]
