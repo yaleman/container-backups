@@ -15,7 +15,7 @@ mypy = "^1.11.2"
 ruff = "^0.6.6"
 pytest = "^8.3.3"
 testcontainers = "^4.8.1"
-minio = "^7.2.8"
+minio = "^7.2.9"
 types-boto3 = "^1.0.2"
 
 [build-system]
