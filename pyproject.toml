@@ -16,7 +16,7 @@ ruff = "^0.8.0"
 pytest = "^8.3.3"
 testcontainers = "^4.8.2"
 minio = "^7.2.11"
-types-boto3 = "^1.0.2"
+types-boto3 = "^1.35.71"
 
 [build-system]
 requires = ["poetry-core"]
