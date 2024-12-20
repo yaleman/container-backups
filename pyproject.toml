@@ -7,7 +7,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-boto3 = "^1.35.80"
+boto3 = "^1.35.85"
 pydantic-settings = "^2.7.0"
 
 [tool.poetry.group.dev.dependencies]
