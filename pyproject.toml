@@ -11,7 +11,7 @@ boto3 = "^1.35.85"
 pydantic-settings = "^2.7.0"
 
 [tool.poetry.group.dev.dependencies]
-mypy = "^1.13.0"
+mypy = "^1.14.0"
 ruff = "^0.8.4"
 pytest = "^8.3.4"
 testcontainers = "^4.9.0"
