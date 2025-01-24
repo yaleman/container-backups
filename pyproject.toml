@@ -14,7 +14,7 @@ pydantic-settings = "^2.7.1"
 mypy = "^1.14.1"
 ruff = "^0.9.3"
 pytest = "^8.3.4"
-testcontainers = "^4.9.0"
+testcontainers = "^4.9.1"
 minio = "^7.2.15"
 types-boto3 = "^1.36.5"
 
