@@ -138,12 +138,17 @@ def main(use_file_path: bool = False) -> Optional[int]:
                 print(error)
         sys.exit(1)
     session = boto3.session.Session()
+
     s3 = session.client(
         service_name="s3",
         endpoint_url=config.endpoint_url,
         config=BotocoreConfig(
-            signature_version="s3v4"
-        ),  # default to "better" signatures. This is required for minio especially
+            # default to "better" signatures. This is required for minio especially
+            signature_version="s3v4",
+            # ref https://github.com/fsspec/s3fs/issues/931#issuecomment-2601216629
+            # request_checksum_calculation="when_supported",
+            # response_checksum_validation="when_supported",
+        ),
     )
 
     upload_file(s3, config)

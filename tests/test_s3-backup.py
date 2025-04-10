@@ -31,11 +31,11 @@ def test_minio_container() -> None:
     )
     with open(tempfilename, "w") as f:
         f.write("hello world\n")
-    with MinioContainer() as minio:
+    with MinioContainer(image="minio/minio:latest") as minio:
         with mock.patch.dict(
             os.environ,
             {
-                f"{ENV_PREFIX}ENDPOINT_URL": f"http://{minio.get_config()["endpoint"]}",
+                f"{ENV_PREFIX}ENDPOINT_URL": f"http://{minio.get_config()['endpoint']}",
                 f"{ENV_PREFIX}FILENAME": tempfilename,
             },
             clear=False,

@@ -1,26 +1,27 @@
-[tool.poetry]
+
+[project]
+authors = [{ name = "James Hodgkinson", email = "james@terminaloutcomes.com" }]
+requires-python = "<4.0,>=3.10"
+dependencies = ["boto3<2.0.0,>=1.37.27", "pydantic-settings<3.0.0,>=2.8.1"]
 name = "container-backups"
-version = "0.1.0"
+version = "0.2.0"
 description = ""
-authors = ["James Hodgkinson <james@terminaloutcomes.com>"]
 readme = "README.md"
 
-[tool.poetry.dependencies]
-python = "^3.10"
-boto3 = "^1.37.27"
-pydantic-settings = "^2.8.1"
-
-[tool.poetry.group.dev.dependencies]
-mypy = "^1.15.0"
-ruff = "^0.11.3"
-pytest = "^8.3.5"
-testcontainers = "^4.10.0"
-minio = "^7.2.15"
-types-boto3 = "^1.37.27"
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
 
-[tool.poetry.scripts]
+[project.scripts]
 s3_backup = "container_backups.s3_backup:main"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.15.0",
+    "ruff>=0.11.3",
+    "pytest>=8.3.5",
+    "testcontainers[minio]>=4.10",
+    # "minio>=7.2.15",
+    "types-boto3>=1.37.27",
+]
