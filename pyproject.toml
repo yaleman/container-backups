@@ -22,6 +22,5 @@ dev = [
     "ruff>=0.11.3",
     "pytest>=8.3.5",
     "testcontainers[minio]>=4.10",
-    # "minio>=7.2.15",
     "types-boto3>=1.37.27",
 ]
