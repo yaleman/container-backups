@@ -236,6 +236,7 @@ dev = [
     { name = "ruff" },
     { name = "testcontainers", extra = ["minio"] },
     { name = "types-boto3" },
+    { name = "types-docker" },
 ]
 
 [package.metadata]
@@ -251,6 +252,7 @@ dev = [
     { name = "ruff", specifier = ">=0.11.3" },
     { name = "testcontainers", extras = ["minio"], specifier = ">=4.10" },
     { name = "types-boto3", specifier = ">=1.37.27" },
+    { name = "types-docker", specifier = ">=7.1.0.20241229" },
 ]
 
 [[package]]
@@ -730,6 +732,31 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ca/00/2028c31004e860d8655e64713a2100e85217afb424276cf1b3337d424357/types_boto3-1.37.31.tar.gz", hash = "sha256:e73381227695ae592fb6e73c9717e7f9ecd271d643d28b375162e054564449e3", size = 99512 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/89/80/fc0a6e73939a2f6cfaa66fd80dda4f4767664379c1429d73932a7961950c/types_boto3-1.37.31-py3-none-any.whl", hash = "sha256:70e8e6677a30076313974ad8130298e82d7261eae0327a77d9346603638fc806", size = 68556 },
+]
+
+[[package]]
+name = "types-docker"
+version = "7.1.0.20241229"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "types-requests" },
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/00/4b/7ca6c1fe916ef4c71f145234902bb4da074e410d9cc0bd72572790c3f06d/types_docker-7.1.0.20241229.tar.gz", hash = "sha256:d968f164bb02f934bc2f178515dd4b3c8b2b4e371a9400ec440247c09c139545", size = 29032 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e4/32/8a1c95566816fef8f7b2407d25981cf0d3ecf2f226ed0ab3a34969994ab7/types_docker-7.1.0.20241229-py3-none-any.whl", hash = "sha256:b760745a6cb0351a19108c0b76e2a43ebc05a686f6c3ec9bc1a991ff9f1cc353", size = 43650 },
+]
+
+[[package]]
+name = "types-requests"
+version = "2.32.0.20250328"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/00/7d/eb174f74e3f5634eaacb38031bbe467dfe2e545bc255e5c90096ec46bc46/types_requests-2.32.0.20250328.tar.gz", hash = "sha256:c9e67228ea103bd811c96984fac36ed2ae8da87a36a633964a21f199d60baf32", size = 22995 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cc/15/3700282a9d4ea3b37044264d3e4d1b1f0095a4ebf860a99914fd544e3be3/types_requests-2.32.0.20250328-py3-none-any.whl", hash = "sha256:72ff80f84b15eb3aa7a8e2625fffb6a93f2ad5a0c20215fc1dcfa61117bcb2a2", size = 20663 },
 ]
 
 [[package]]

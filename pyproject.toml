@@ -23,4 +23,5 @@ dev = [
     "pytest>=8.3.5",
     "testcontainers[minio]>=4.10",
     "types-boto3>=1.37.27",
+    "types-docker>=7.1.0.20241229",
 ]
