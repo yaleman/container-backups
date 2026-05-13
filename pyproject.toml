@@ -1,8 +1,11 @@
 
 [project]
 authors = [{ name = "James Hodgkinson", email = "james@terminaloutcomes.com" }]
-requires-python = "<4.0,>=3.10"
-dependencies = ["boto3<2.0.0,>=1.37.27", "pydantic-settings<3.0.0,>=2.8.1"]
+requires-python = ">=3.13"
+dependencies = [
+    "boto3<2.0.0,>=1.37.27",
+    "pydantic-settings<3.0.0,>=2.8.1",
+]
 name = "container-backups"
 version = "0.2.0"
 description = ""
@@ -18,10 +21,11 @@ s3_backup = "container_backups.s3_backup:main"
 
 [dependency-groups]
 dev = [
-    "mypy>=1.15.0",
-    "ruff>=0.11.3",
+    "mypy>=2.0.0",
+    "ruff>=0.15.12",
     "pytest>=9.0.3",
     "testcontainers[minio]>=4.10",
-    "types-boto3>=1.37.27",
+    "types-boto3>=1.43.6",
     "types-docker>=7.1.0.20241229",
+    "ty>=0.0.35",
 ]

@@ -1,17 +1,20 @@
 import io
 import os
 import tempfile
+from typing import Any, cast
 from unittest import mock
 import docker
 from pydantic import ValidationError
 import pytest
-from testcontainers.minio import MinioContainer  # type: ignore
+from testcontainers.minio import MinioContainer
 from datetime import datetime, timedelta, UTC
+import docker.errors
 from container_backups.s3_backup import (
     ENV_PREFIX,
     Config,
+    clean_up_old_files,
     main,
-    get_date_from_file_path,
+    get_date_from_file_name,
 )
 
 
@@ -39,6 +42,7 @@ def test_minio_container() -> None:
                 {
                     f"{ENV_PREFIX}ENDPOINT_URL": f"http://{minio.get_config()['endpoint']}",
                     f"{ENV_PREFIX}FILENAME": tempfilename,
+                    f"{ENV_PREFIX}USE_FILE_PATH": "true",
                 },
                 clear=False,
             ):
@@ -58,16 +62,15 @@ def test_minio_container() -> None:
                         metadata={"LastModified": yesterday.isoformat()},
                     )
                     print(f"Put {filename}")
-                # with NamedTemporaryFile(prefix=f"backup-testfile-{datetime.now(UTC).strftime('%Y%m%d-%H%M')}", suffix=".tar.gz") as tmpfile:
 
-                res = main(use_file_path=True)
+                res = main()
                 assert res == 4
     except docker.errors.DockerException:
         pytest.skip("Docker is not running or not available")
 
 
 def test_get_date_from_file_path() -> None:
-    assert get_date_from_file_path("backup-testfile-20240505-0556.tar.gz") == datetime(
+    assert get_date_from_file_name("backup-testfile-20240505-0556.tar.gz") == datetime(
         2024, 5, 5, 5, 56
     ).astimezone(UTC)
 
@@ -98,4 +101,58 @@ def test_config() -> None:
         },
     ):
         with pytest.raises(FileNotFoundError):
-            Config()  # type: ignore
+            Config.model_validate({})
+
+
+def test_config_with_file_path() -> None:
+    tempdir = tempfile.gettempdir()
+    set_date = datetime(year=2021, month=1, day=1)
+    tempfilename = os.path.join(
+        tempdir,
+        f"backup-testfile-{set_date.strftime('%Y%m%d-%H%M')}.tar.gz",
+    )
+    with open(tempfilename, "w") as f:
+        f.write("hello world\n")
+
+    settings = {
+        f"{ENV_PREFIX}FILENAME": tempfilename,
+        f"{ENV_PREFIX}BUCKET_NAME": "bucket",
+        f"{ENV_PREFIX}USE_FILE_PATH": "true",
+    }
+    with mock.patch.dict(os.environ, settings):
+        config = Config.model_validate({})
+        assert config.use_file_path is True
+
+
+def test_cleanup_deletes_prefixed_s3_keys_without_adding_bucket_path_again() -> None:
+    class FakeS3:
+        deleted_keys: list[str]
+
+        def list_objects_v2(self, Bucket: str, Prefix: str) -> dict[str, list[dict[str, str]]]:
+            return {
+                "Contents": [
+                    {"Key": f"{Prefix}/backup-testfile-20200101-0000.tar.gz"},
+                    {"Key": f"{Prefix}/backup-testfile-20990101-0000.tar.gz"},
+                    {"Key": f"{Prefix}/backup-testfile-20990102-0000.tar.gz"},
+                ]
+            }
+
+        def delete_objects(
+            self, Bucket: str, Delete: dict[str, list[dict[str, str]]]
+        ) -> None:
+            self.deleted_keys = [item["Key"] for item in Delete["Objects"]]
+
+    s3 = FakeS3()
+    config = Config.model_validate(
+        {
+            "filename": "README.md",
+            "bucket_name": "bucket",
+            "bucket_path": "database",
+            "max_age_days": 1,
+            "min_files": 2,
+            "use_file_path": True,
+        }
+    )
+
+    assert clean_up_old_files(cast(Any, s3), config) == 1
+    assert s3.deleted_keys == ["database/backup-testfile-20200101-0000.tar.gz"]
