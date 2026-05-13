@@ -76,9 +76,15 @@ def clean_up_old_files(
 
     for obj in response_contents:
         if config.use_file_path:
-            last_modified = get_date_from_file_name(obj["Key"])
+            last_modified = get_date_from_file_name(obj["Key"].split("/")[-1])
         else:
             last_modified = obj.get("LastModified")
+        if last_modified is None:
+            print(
+                f"Couldn't get last modified date for {obj.get('Key')}, skipping",
+                file=sys.stderr,
+            )
+            continue
         if last_modified < age_cutoff:
             # print(f"{obj.get('Key')} is older than cutoff")
             files_to_remove.append(obj["Key"])
