@@ -5,9 +5,9 @@ help:
 
 .PHONY: checks
 checks: ## Check things
-checks: shellcheck
+checks: shellcheck semgrep
 	uv run ty check
-	uv run ruff check
+	uv run ruff check *.py tests/*.py
 
 .PHONY: shellcheck
 shellcheck: ## Run shellcheck
