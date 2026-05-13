@@ -14,7 +14,6 @@ from pydantic import Field, field_validator
 from pydantic_core import ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
 ENV_PREFIX = "S3_BACKUP_"
 
 
@@ -25,6 +24,7 @@ class Config(BaseSettings):
     max_age_days: int = Field(default=30)
     min_files: int = Field(default=7)
     endpoint_url: Optional[str] = None
+    use_file_path: bool = Field(default=False)
 
     model_config = SettingsConfigDict(env_prefix=ENV_PREFIX)
 
@@ -38,7 +38,7 @@ class Config(BaseSettings):
         return value
 
 
-def get_date_from_file_path(file_path: str) -> datetime:
+def get_date_from_file_name(file_path: str) -> datetime:
     """parse the file path we use for a date"""
     res = re.search(r"^[\w]+-[\w]+-(?P<datestring>\d{8}-\d{4}).tar.gz", file_path)
     if res is None:
@@ -50,17 +50,20 @@ def get_date_from_file_path(file_path: str) -> datetime:
 def clean_up_old_files(
     s3: BaseClient,
     config: Config,
-    use_file_path: bool = False,
 ) -> Optional[int]:
     print(f"Looking in s3://{config.bucket_name}/{config.bucket_path}", file=sys.stderr)
     response = s3.list_objects_v2(Bucket=config.bucket_name, Prefix=config.bucket_path)  # type: ignore
 
-    if len(response.get("Contents", [])) < config.min_files:
+    response_contents = response.get("Contents", [])
+
+    if len(response_contents) < config.min_files:
         print(
             f"Found less than {config.min_files} files total, exiting",
             file=sys.stderr,
         )
         return None
+    else:
+        print("Found {} files total".format(len(response_contents)), file=sys.stderr)
 
     age_cutoff = datetime.now(UTC) - timedelta(days=config.max_age_days)
     print(
@@ -71,9 +74,9 @@ def clean_up_old_files(
     files_to_remove = []
     files_to_keep = []
 
-    for obj in response.get("Contents", []):
-        if use_file_path:
-            last_modified = get_date_from_file_path(obj["Key"])
+    for obj in response_contents:
+        if config.use_file_path:
+            last_modified = get_date_from_file_name(obj["Key"])
         else:
             last_modified = obj.get("LastModified")
         if last_modified < age_cutoff:
@@ -123,11 +126,11 @@ def upload_file(s3: BaseClient, config: Config) -> None:
     )
 
 
-def main(use_file_path: bool = False) -> Optional[int]:
+def main() -> Optional[int]:
     """returns the number of files deleted"""
 
     try:
-        config = Config()  # type: ignore
+        config = Config.model_validate({})
     except ValidationError as ve:
         for error in ve.errors():
             if error.get("type") == "missing":
@@ -152,7 +155,7 @@ def main(use_file_path: bool = False) -> Optional[int]:
     )
 
     upload_file(s3, config)
-    return clean_up_old_files(s3=s3, config=config, use_file_path=use_file_path)
+    return clean_up_old_files(s3=s3, config=config)
 
 
 if __name__ == "__main__":

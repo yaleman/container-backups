@@ -6,8 +6,8 @@ help:
 .PHONY: checks
 checks: ## Check things
 checks: shellcheck semgrep
-	poetry run mypy --strict container_backups tests/*.py
-	poetry run ruff check *.py tests/*.py
+	uv run ty check
+	uv run ruff check *.py tests/*.py
 
 .PHONY: shellcheck
 shellcheck: ## Run shellcheck

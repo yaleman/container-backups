@@ -5,13 +5,14 @@ from unittest import mock
 import docker
 from pydantic import ValidationError
 import pytest
-from testcontainers.minio import MinioContainer  # type: ignore
+from testcontainers.minio import MinioContainer
 from datetime import datetime, timedelta, UTC
+import docker.errors
 from container_backups.s3_backup import (
     ENV_PREFIX,
     Config,
     main,
-    get_date_from_file_path,
+    get_date_from_file_name,
 )
 
 
@@ -39,6 +40,7 @@ def test_minio_container() -> None:
                 {
                     f"{ENV_PREFIX}ENDPOINT_URL": f"http://{minio.get_config()['endpoint']}",
                     f"{ENV_PREFIX}FILENAME": tempfilename,
+                    f"{ENV_PREFIX}USE_FILE_PATH": "true",
                 },
                 clear=False,
             ):
@@ -58,16 +60,15 @@ def test_minio_container() -> None:
                         metadata={"LastModified": yesterday.isoformat()},
                     )
                     print(f"Put {filename}")
-                # with NamedTemporaryFile(prefix=f"backup-testfile-{datetime.now(UTC).strftime('%Y%m%d-%H%M')}", suffix=".tar.gz") as tmpfile:
 
-                res = main(use_file_path=True)
+                res = main()
                 assert res == 4
     except docker.errors.DockerException:
         pytest.skip("Docker is not running or not available")
 
 
 def test_get_date_from_file_path() -> None:
-    assert get_date_from_file_path("backup-testfile-20240505-0556.tar.gz") == datetime(
+    assert get_date_from_file_name("backup-testfile-20240505-0556.tar.gz") == datetime(
         2024, 5, 5, 5, 56
     ).astimezone(UTC)
 
@@ -98,4 +99,24 @@ def test_config() -> None:
         },
     ):
         with pytest.raises(FileNotFoundError):
-            Config()  # type: ignore
+            Config.model_validate({})
+
+
+def test_config_with_file_path() -> None:
+    tempdir = tempfile.gettempdir()
+    set_date = datetime(year=2021, month=1, day=1)
+    tempfilename = os.path.join(
+        tempdir,
+        f"backup-testfile-{set_date.strftime('%Y%m%d-%H%M')}.tar.gz",
+    )
+    with open(tempfilename, "w") as f:
+        f.write("hello world\n")
+
+    settings = {
+        f"{ENV_PREFIX}FILENAME": tempfilename,
+        f"{ENV_PREFIX}BUCKET_NAME": "bucket",
+        f"{ENV_PREFIX}USE_FILE_PATH": "true",
+    }
+    with mock.patch.dict(os.environ, settings):
+        config = Config.model_validate({})
+        assert config.use_file_path is True
