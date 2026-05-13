@@ -1,6 +1,7 @@
 import io
 import os
 import tempfile
+from typing import Any, cast
 from unittest import mock
 import docker
 from pydantic import ValidationError
@@ -11,6 +12,7 @@ import docker.errors
 from container_backups.s3_backup import (
     ENV_PREFIX,
     Config,
+    clean_up_old_files,
     main,
     get_date_from_file_name,
 )
@@ -120,3 +122,37 @@ def test_config_with_file_path() -> None:
     with mock.patch.dict(os.environ, settings):
         config = Config.model_validate({})
         assert config.use_file_path is True
+
+
+def test_cleanup_deletes_prefixed_s3_keys_without_adding_bucket_path_again() -> None:
+    class FakeS3:
+        deleted_keys: list[str]
+
+        def list_objects_v2(self, Bucket: str, Prefix: str) -> dict[str, list[dict[str, str]]]:
+            return {
+                "Contents": [
+                    {"Key": f"{Prefix}/backup-testfile-20200101-0000.tar.gz"},
+                    {"Key": f"{Prefix}/backup-testfile-20990101-0000.tar.gz"},
+                    {"Key": f"{Prefix}/backup-testfile-20990102-0000.tar.gz"},
+                ]
+            }
+
+        def delete_objects(
+            self, Bucket: str, Delete: dict[str, list[dict[str, str]]]
+        ) -> None:
+            self.deleted_keys = [item["Key"] for item in Delete["Objects"]]
+
+    s3 = FakeS3()
+    config = Config.model_validate(
+        {
+            "filename": "README.md",
+            "bucket_name": "bucket",
+            "bucket_path": "database",
+            "max_age_days": 1,
+            "min_files": 2,
+            "use_file_path": True,
+        }
+    )
+
+    assert clean_up_old_files(cast(Any, s3), config) == 1
+    assert s3.deleted_keys == ["database/backup-testfile-20200101-0000.tar.gz"]

@@ -102,12 +102,7 @@ def clean_up_old_files(
         # print(f"Deleting {files_to_remove}", file=sys.stderr)
         s3.delete_objects(  # type: ignore
             Bucket=config.bucket_name,
-            Delete={
-                "Objects": [
-                    {"Key": f"{config.bucket_path}/{filename}"}
-                    for filename in files_to_remove
-                ]
-            },
+            Delete={"Objects": [{"Key": filename} for filename in files_to_remove]},
         )
         return len(files_to_remove)
     else:
