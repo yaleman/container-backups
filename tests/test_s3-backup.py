@@ -7,16 +7,13 @@ import docker
 from pydantic import ValidationError
 import pytest
 from testcontainers.minio import MinioContainer
-from testcontainers.minio import MinioContainer
 from datetime import datetime, timedelta, UTC
-import docker.errors
 import docker.errors
 from container_backups.s3_backup import (
     ENV_PREFIX,
     Config,
     clean_up_old_files,
     main,
-    get_date_from_file_name,
     get_date_from_file_name,
 )
 
@@ -46,7 +43,6 @@ def test_minio_container() -> None:
                     f"{ENV_PREFIX}ENDPOINT_URL": f"http://{minio.get_config()['endpoint']}",
                     f"{ENV_PREFIX}FILENAME": tempfilename,
                     f"{ENV_PREFIX}USE_FILE_PATH": "true",
-                    f"{ENV_PREFIX}USE_FILE_PATH": "true",
                 },
                 clear=False,
             ):
@@ -75,7 +71,6 @@ def test_minio_container() -> None:
 
 
 def test_get_date_from_file_path() -> None:
-    assert get_date_from_file_name("backup-testfile-20240505-0556.tar.gz") == datetime(
     assert get_date_from_file_name("backup-testfile-20240505-0556.tar.gz") == datetime(
         2024, 5, 5, 5, 56
     ).astimezone(UTC)
@@ -134,7 +129,9 @@ def test_cleanup_deletes_prefixed_s3_keys_without_adding_bucket_path_again() -> 
     class FakeS3:
         deleted_keys: list[str]
 
-        def list_objects_v2(self, Bucket: str, Prefix: str) -> dict[str, list[dict[str, str]]]:
+        def list_objects_v2(
+            self, Bucket: str, Prefix: str
+        ) -> dict[str, list[dict[str, str]]]:
             return {
                 "Contents": [
                     {"Key": f"{Prefix}/backup-testfile-20200101-0000.tar.gz"},
