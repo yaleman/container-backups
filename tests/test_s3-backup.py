@@ -64,6 +64,7 @@ def test_minio_container() -> None:
                     print(f"Put {filename}")
 
                 res = main()
+
                 assert res == 4
     except docker.errors.DockerException:
         pytest.skip("Docker is not running or not available")
@@ -128,7 +129,9 @@ def test_cleanup_deletes_prefixed_s3_keys_without_adding_bucket_path_again() -> 
     class FakeS3:
         deleted_keys: list[str]
 
-        def list_objects_v2(self, Bucket: str, Prefix: str) -> dict[str, list[dict[str, str]]]:
+        def list_objects_v2(
+            self, Bucket: str, Prefix: str
+        ) -> dict[str, list[dict[str, str]]]:
             return {
                 "Contents": [
                     {"Key": f"{Prefix}/backup-testfile-20200101-0000.tar.gz"},
