@@ -86,18 +86,10 @@ def clean_up_old_files(
             )
             continue
         if last_modified < age_cutoff:
-            # print(f"{obj.get('Key')} is older than cutoff")
             files_to_remove.append(obj["Key"])
         else:
-            # print(f"{obj.get('Key')} is younger than cutoff")
             files_to_keep.append(obj["Key"])
 
-    if len(files_to_keep) < config.min_files:
-        print(
-            f"Found less than {config.min_files} files younger than {age_cutoff.isoformat()}, exiting",
-            file=sys.stderr,
-        )
-        return None
     if files_to_remove:
         print(f"Deleting {len(files_to_remove)} files", file=sys.stderr)
         s3.delete_objects(  # ty: ignore[unresolved-attribute]
