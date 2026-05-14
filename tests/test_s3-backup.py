@@ -64,7 +64,7 @@ def test_minio_container() -> None:
                     print(f"Put {filename}")
 
                 res = main()
-                res = main()
+
                 assert res == 4
     except docker.errors.DockerException:
         pytest.skip("Docker is not running or not available")
