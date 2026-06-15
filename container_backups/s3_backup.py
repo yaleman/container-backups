@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from os.path import basename
@@ -25,6 +26,8 @@ class Config(BaseSettings):
     min_files: int = Field(default=7)
     endpoint_url: Optional[str] = None
     use_file_path: bool = Field(default=False)
+
+    show_config: bool = Field(default=False)
 
     model_config = SettingsConfigDict(env_prefix=ENV_PREFIX)
 
@@ -133,6 +136,21 @@ def main() -> Optional[int]:
             else:
                 print(error)
         sys.exit(1)
+    if config.show_config:
+        print(config.model_dump_json(indent=2))
+        AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+        AWS_ENDPOINT_URL = os.getenv("AWS_ENDPOINT_URL")
+        AWS_REGION = os.getenv("AWS_REGION")
+        AWS_SECRET_ACCESS_KEY = (
+            os.getenv("AWS_SECRET_ACCESS_KEY", "")[:5]
+            + "..."
+            + str(max(len(os.getenv("AWS_SECRET_ACCESS_KEY", "")) - 5, 0))
+        )
+        print(f"{AWS_ACCESS_KEY_ID=}")
+        print(f"{AWS_SECRET_ACCESS_KEY=}")
+        print(f"{AWS_ENDPOINT_URL=}")
+        print(f"{AWS_REGION=}")
+
     session = boto3.session.Session()
 
     s3 = session.client(
