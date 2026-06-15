@@ -160,8 +160,8 @@ def main() -> Optional[int]:
             # default to "better" signatures. This is required for minio especially
             signature_version="s3v4",
             # ref https://github.com/fsspec/s3fs/issues/931#issuecomment-2601216629
-            # request_checksum_calculation="when_supported",
-            # response_checksum_validation="when_supported",
+            request_checksum_calculation="when_required",
+            # response_checksum_validation="when_rewuired",
         ),
     )
 
