@@ -141,6 +141,7 @@ def main() -> Optional[int]:
         AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
         AWS_ENDPOINT_URL = os.getenv("AWS_ENDPOINT_URL")
         AWS_REGION = os.getenv("AWS_REGION")
+        AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION")
         AWS_SECRET_ACCESS_KEY = (
             os.getenv("AWS_SECRET_ACCESS_KEY", "")[:5]
             + "..."
@@ -150,12 +151,15 @@ def main() -> Optional[int]:
         print(f"{AWS_SECRET_ACCESS_KEY=}")
         print(f"{AWS_ENDPOINT_URL=}")
         print(f"{AWS_REGION=}")
+        print(f"{AWS_DEFAULT_REGION=}")
 
     session = boto3.session.Session()
+    region_name = os.getenv("AWS_REGION", os.getenv("AWS_DEFAULT_REGION"))
 
     s3 = session.client(
         service_name="s3",
         endpoint_url=config.endpoint_url,
+        region_name=region_name,
         config=BotocoreConfig(
             # default to "better" signatures. This is required for minio especially
             signature_version="s3v4",
