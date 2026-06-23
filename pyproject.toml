@@ -4,7 +4,7 @@ authors = [{ name = "James Hodgkinson", email = "james@terminaloutcomes.com" }]
 requires-python = ">=3.13"
 dependencies = [
     "boto3<2.0.0,>=1.37.27",
-    "pydantic-settings<3.0.0,>=2.8.1",
+    "pydantic-settings>=2.14.2,<3.0.0",
 ]
 name = "container-backups"
 version = "0.2.0"
