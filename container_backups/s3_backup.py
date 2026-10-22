@@ -22,8 +22,8 @@ class Config(BaseSettings):
     filename: str = Field()
     bucket_name: str = Field()
     bucket_path: str = Field(default="")
-    max_age_days: int = Field(default=30)
-    min_files: int = Field(default=7)
+    max_age_days: int = Field(default=30, ge=0)
+    min_files: int = Field(default=7, ge=0)
     endpoint_url: Optional[str] = None
     use_file_path: bool = Field(default=False)
 
@@ -36,18 +36,19 @@ class Config(BaseSettings):
     def validate_filename(cls, value: str) -> str:
         if not value:
             raise ValueError("Filename is required to be non-empty!")
-        if not Path(value).exists():
-            raise FileNotFoundError(f"File {value} not found")
+        if not Path(value).is_file():
+            raise FileNotFoundError(
+                f"Backup file {value} not found or not a regular file"
+            )
         return value
 
 
 def get_date_from_file_name(file_path: str) -> datetime:
     """parse the file path we use for a date"""
-    res = re.search(r"^[\w]+-[\w]+-(?P<datestring>\d{8}-\d{4}).tar.gz", file_path)
+    res = re.fullmatch(r"[\w-]+-[\w-]+-(?P<datestring>\d{8}-\d{4})\.tar\.gz", file_path)
     if res is None:
         raise ValueError(f"Couldn't parse '{file_path}' for a matching date!")
-    # print(res.group("datestring"))
-    return datetime.strptime(res.group("datestring"), "%Y%m%d-%H%M").astimezone(UTC)
+    return datetime.strptime(res.group("datestring"), "%Y%m%d-%H%M").replace(tzinfo=UTC)
 
 
 def clean_up_old_files(
@@ -55,54 +56,66 @@ def clean_up_old_files(
     config: Config,
 ) -> Optional[int]:
     print(f"Looking in s3://{config.bucket_name}/{config.bucket_path}", file=sys.stderr)
-    response = s3.list_objects_v2(Bucket=config.bucket_name, Prefix=config.bucket_path)  # type: ignore
+    # Treat bucket_path as a directory, not a partial prefix such as 'db-old'.
+    prefix = config.bucket_path.strip("/")
+    prefix = f"{prefix}/" if prefix else ""
+    candidates = []
+    paginator = s3.get_paginator("list_objects_v2")
+    for page in paginator.paginate(Bucket=config.bucket_name, Prefix=prefix):
+        for obj in page.get("Contents", []):
+            key = obj["Key"]
+            try:
+                filename_date = get_date_from_file_name(basename(key))
+            except ValueError:
+                # Do not expire temporary uploads, unrelated objects, or invalid dates.
+                continue
+            modified = (
+                filename_date if config.use_file_path else obj.get("LastModified")
+            )
+            if modified is None:
+                print(
+                    f"Couldn't get last modified date for {key}, skipping",
+                    file=sys.stderr,
+                )
+                continue
+            candidates.append((key, modified))
 
-    response_contents = response.get("Contents", [])
-
-    if len(response_contents) < config.min_files:
+    # MIN_FILES remains the documented threshold for attempting cleanup. It is
+    # deliberately not a survivor floor (see commit 9b9a6f5).
+    if len(candidates) < config.min_files:
         print(
-            f"Found less than {config.min_files} files total, exiting",
+            f"Found less than {config.min_files} backup files total, exiting",
             file=sys.stderr,
         )
         return None
-    else:
-        print("Found {} files total".format(len(response_contents)), file=sys.stderr)
 
     age_cutoff = datetime.now(UTC) - timedelta(days=config.max_age_days)
     print(
         f"Files older than {age_cutoff.isoformat()} ({config.max_age_days} days) will be deleted",
         file=sys.stderr,
     )
-
-    files_to_remove = []
-    files_to_keep = []
-
-    for obj in response_contents:
-        if config.use_file_path:
-            last_modified = get_date_from_file_name(obj["Key"].split("/")[-1])
-        else:
-            last_modified = obj.get("LastModified")
-        if last_modified is None:
-            print(
-                f"Couldn't get last modified date for {obj.get('Key')}, skipping",
-                file=sys.stderr,
-            )
-            continue
-        if last_modified < age_cutoff:
-            files_to_remove.append(obj["Key"])
-        else:
-            files_to_keep.append(obj["Key"])
-
-    if files_to_remove:
-        print(f"Deleting {len(files_to_remove)} files", file=sys.stderr)
-        s3.delete_objects(  # ty: ignore[unresolved-attribute]
-            Bucket=config.bucket_name,
-            Delete={"Objects": [{"Key": filename} for filename in files_to_remove]},
-        )
-        return len(files_to_remove)
-    else:
+    files_to_remove = [key for key, modified in candidates if modified < age_cutoff]
+    if not files_to_remove:
         print("No files to delete", file=sys.stderr)
-    return None
+        return None
+
+    # S3 accepts at most 1,000 keys per DeleteObjects request. An HTTP 200 may
+    # still contain per-object errors, so never report these as successful.
+    deleted = 0
+    for start in range(0, len(files_to_remove), 1000):
+        batch = files_to_remove[start : start + 1000]
+        response = s3.delete_objects(
+            Bucket=config.bucket_name,
+            Delete={"Objects": [{"Key": key} for key in batch]},
+        )
+        errors = response.get("Errors", [])
+        if errors:
+            raise RuntimeError(
+                f"S3 cleanup failed for {len(errors)} objects: {errors!r}"
+            )
+        deleted += len(batch)
+    print(f"Deleted {deleted} files", file=sys.stderr)
+    return deleted
 
 
 def upload_file(s3: BaseClient, config: Config) -> None:
@@ -111,7 +124,7 @@ def upload_file(s3: BaseClient, config: Config) -> None:
     if not Path(config.filename).exists():
         raise FileNotFoundError(f"File {config.filename} not found")
 
-    key = f"{config.bucket_path}/{basename(config.filename)}"
+    key = f"{config.bucket_path.strip('/')}/{basename(config.filename)}"
     if key.startswith("/"):
         key = key[1:]
 
@@ -122,8 +135,24 @@ def upload_file(s3: BaseClient, config: Config) -> None:
     )
 
 
+class BackupError(RuntimeError):
+    """Combined operation outcome, preserving both original exceptions."""
+
+    def __init__(
+        self, upload_error: Exception | None, cleanup_error: Exception | None
+    ) -> None:
+        self.upload_error = upload_error
+        self.cleanup_error = cleanup_error
+        failures = []
+        if upload_error is not None:
+            failures.append(f"Upload failed: {upload_error}")
+        if cleanup_error is not None:
+            failures.append(f"Cleanup failed: {cleanup_error}")
+        super().__init__("; ".join(failures))
+
+
 def main() -> Optional[int]:
-    """returns the number of files deleted"""
+    """Attempt upload, always attempt cleanup, and fail if either operation fails."""
 
     try:
         config = Config.model_validate({})
@@ -169,13 +198,36 @@ def main() -> Optional[int]:
         ),
     )
 
-    upload_file(s3, config)
-    return clean_up_old_files(s3=s3, config=config)
+    upload_error = None
+    cleanup_error = None
+    deleted = None
+    try:
+        upload_file(s3, config)
+    except Exception as error:
+        upload_error = error
+
+    # Cleanup must run after the upload attempt, including when the destination
+    # is full. Its outcome must not mask a failed upload (or vice versa).
+    try:
+        deleted = clean_up_old_files(s3=s3, config=config)
+    except Exception as error:
+        cleanup_error = error
+
+    if upload_error is not None or cleanup_error is not None:
+        raise BackupError(upload_error, cleanup_error) from (
+            upload_error if upload_error is not None else cleanup_error
+        )
+    return deleted
 
 
-if __name__ == "__main__":
+def cli() -> None:
+    """A successful cleanup count is not a process exit status."""
     try:
         main()
     except Exception as error:
-        print(f"ERROR: {error}")
-        exit(1)
+        print(f"ERROR: {error}", file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    cli()
