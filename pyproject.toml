@@ -17,7 +17,7 @@ requires = ["pdm-backend"]
 build-backend = "pdm.backend"
 
 [project.scripts]
-s3_backup = "container_backups.s3_backup:main"
+s3_backup = "container_backups.s3_backup:cli"
 
 [dependency-groups]
 dev = [

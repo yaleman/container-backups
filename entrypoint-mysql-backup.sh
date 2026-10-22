@@ -1,4 +1,5 @@
 #!/bin/bash
+set -eo pipefail
 
 
 if [ -z "${BACKUP_NAME}" ]; then
@@ -50,7 +51,7 @@ echo "Listing backup files..."
 ls -lah ./
 echo "Saved backup as '${BACKUP_FILE}.gz'"
 if [ -n "${S3_BACKUP_BUCKET_NAME}" ]; then
-    S3_BACKUP_FILENAME="$(ls ./*.tar.gz)" s3_backup
+    S3_BACKUP_FILENAME="${BACKUP_FILE}.gz" s3_backup
 else
     echo "No S3_BACKUP_BUCKET_NAME specified, skipping upload."
 fi

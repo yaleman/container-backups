@@ -72,8 +72,8 @@ def test_minio_container() -> None:
 
 def test_get_date_from_file_path() -> None:
     assert get_date_from_file_name("backup-testfile-20240505-0556.tar.gz") == datetime(
-        2024, 5, 5, 5, 56
-    ).astimezone(UTC)
+        2024, 5, 5, 5, 56, tzinfo=UTC
+    )
 
 
 def test_config() -> None:
@@ -129,6 +129,13 @@ def test_cleanup_deletes_prefixed_s3_keys_without_adding_bucket_path_again() -> 
     class FakeS3:
         deleted_keys: list[str]
 
+        def get_paginator(self, operation: str) -> "FakeS3":
+            assert operation == "list_objects_v2"
+            return self
+
+        def paginate(self, Bucket: str, Prefix: str) -> list[dict[str, Any]]:
+            return [self.list_objects_v2(Bucket, Prefix.rstrip("/"))]
+
         def list_objects_v2(
             self, Bucket: str, Prefix: str
         ) -> dict[str, list[dict[str, str]]]:
@@ -142,8 +149,9 @@ def test_cleanup_deletes_prefixed_s3_keys_without_adding_bucket_path_again() -> 
 
         def delete_objects(
             self, Bucket: str, Delete: dict[str, list[dict[str, str]]]
-        ) -> None:
+        ) -> dict[str, Any]:
             self.deleted_keys = [item["Key"] for item in Delete["Objects"]]
+            return {}
 
     s3 = FakeS3()
     config = Config.model_validate(
